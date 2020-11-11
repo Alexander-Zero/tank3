@@ -1,38 +1,40 @@
 package com.alex.zero;
 
-import java.awt.Graphics;
+import java.awt.*;
 
 public class Explode {
-	public static int WIDTH = ResourceMgr.explodes[0].getWidth();
-	public static int HEIGHT = ResourceMgr.explodes[0].getHeight();
-	
-	private int x, y;
-	
-	//private boolean living = true;
-	TankFrame tf = null;
-	
-	private int step = 0;
-	
-	public Explode(int x, int y, TankFrame tf) {
-		this.x = x;
-		this.y = y;
-		this.tf = tf;
-		
-		new Thread(()->new Audio("main/resources/audio/explode.wav").play()).start();
-	}
-	
-	
+    public static int WIDTH = ResourceMgr.explodes[0].getWidth();
+    public static int HEIGHT = ResourceMgr.explodes[0].getHeight();
 
-	public void paint(Graphics g) {
-		
-		g.drawImage(ResourceMgr.explodes[step++], x, y, null);
-		
-		if(step >= ResourceMgr.explodes.length) 
-			tf.explodes.remove(this);
-		
-		
-	}
-	
-	
+    private int x, y;
+
+    //private boolean living = true;
+
+    private int step = 0;
+
+    public Explode(int x, int y) {
+        this.x = x;
+        this.y = y;
+
+        new Thread(() -> new Audio("audio/explode.wav").play()).start();
+    }
+
+//    public Explode(ExplodeMsg explodeMsg) {
+//        this.x = explodeMsg.x;
+//        this.y = explodeMsg.y;
+//    }
+
+
+    public void paint(Graphics g) {
+
+        g.drawImage(ResourceMgr.explodes[step++], x, y, null);
+
+        if (step >= ResourceMgr.explodes.length) {
+            TankFrame.INSTANCE.explodes.remove(this);
+        }
+
+
+    }
+
 
 }

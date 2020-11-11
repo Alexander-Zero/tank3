@@ -1,24 +1,26 @@
 package com.alex.zero;
 
 import com.alex.zero.net.Client;
+import com.alex.zero.net.TankJoinMsg;
+import com.alex.zero.net.TankMovingMsg;
+import com.alex.zero.net.TankStopMsg;
 
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class TankFrame extends Frame {
     private static final Random RANDOM = new Random();
     public static final TankFrame INSTANCE = new TankFrame();
     public Client client;
-    public Tank myTank = new Tank(RANDOM.nextInt(500), RANDOM.nextInt(500), Dir.values()[RANDOM.nextInt(2)], Group.values()[RANDOM.nextInt(2)], this);
-    List<Bullet> bullets = new ArrayList<>();
-    //    List<Tank> tanks = new ArrayList<>();
-    List<Explode> explodes = new ArrayList<>();
-   public Map<UUID, Tank> tankMap = new HashMap<>();
+    public UUID id;
+    public List<Bullet> bullets = new ArrayList<>();
+    public List<Explode> explodes = new ArrayList<>();
+    public Map<UUID, Tank> tankMap = new HashMap<>();
 
 
     static final int GAME_WIDTH = 1080, GAME_HEIGHT = 960;
@@ -39,6 +41,8 @@ public class TankFrame extends Frame {
             }
 
         });
+
+        id = UUID.randomUUID();
     }
 
     Image offScreenImage = null;
@@ -66,11 +70,10 @@ public class TankFrame extends Frame {
         g.drawString("爆炸的数量:" + explodes.size(), 10, 100);
         g.setColor(c);
 
-        myTank.paint(g);
-
-        tankMap.forEach((id, tank) -> {
-            tank.paint(g);
-        });
+        List<Map.Entry<UUID, Tank>> tankEntry = new ArrayList<>(tankMap.entrySet());
+        for (int i = 0; i < tankEntry.size(); i++) {
+            tankEntry.get(i).getValue().paint(g);
+        }
         for (int i = 0; i < bullets.size(); i++) {
             bullets.get(i).paint(g);
         }
@@ -78,13 +81,30 @@ public class TankFrame extends Frame {
         for (int i = 0; i < explodes.size(); i++) {
             explodes.get(i).paint(g);
         }
-        //collision detect
         List<Tank> tanks = new ArrayList<>(tankMap.values());
+
         for (int i = 0; i < bullets.size(); i++) {
-            for (int j = 0; j < tanks.size(); j++)
+            for (int j = 0; j < tanks.size(); j++) {
                 bullets.get(i).collideWith(tanks.get(j));
+            }
         }
     }
+
+    public void updateTankStatus(TankMovingMsg tankMovingMsg) {
+        Tank tank = tankMap.get(tankMovingMsg.id);
+        tank.updateStatus(tankMovingMsg);
+
+    }
+
+    public void updateTankStatus(TankStopMsg tankStopMsg) {
+        Tank tank = tankMap.get(tankStopMsg.id);
+        tank.updateStatus(tankStopMsg);
+    }
+
+//    public void updateTankStatus(TankDieMsg tankDieMsg) {
+//        Tank tank = tankMap.get(tankDieMsg.id);
+//        tank.die();
+//    }
 
     class MyKeyListener extends KeyAdapter {
 
@@ -137,7 +157,7 @@ public class TankFrame extends Frame {
                     break;
 
                 case KeyEvent.VK_CONTROL:
-                    myTank.fire();
+                    tankMap.get(id).fire();
                     break;
 
                 default:
@@ -148,20 +168,33 @@ public class TankFrame extends Frame {
         }
 
         private void setMainTankDir() {
+            Tank mainTank = tankMap.get(id);
+            boolean changeMoving = !mainTank.getMoving();
+            if (!bL && !bU && !bR && !bD) {
+                mainTank.setMoving(false);
+                if (!changeMoving) {
+                    Client.INSTANCE.sendMsg(new TankStopMsg(mainTank.getX(), mainTank.getY(), mainTank.getDir(), mainTank.getId()));
+                }
+            } else {
+                Dir lastDir = mainTank.getDir();
+                mainTank.setMoving(true);
 
-            if (!bL && !bU && !bR && !bD)
-                myTank.setMoving(false);
-            else {
-                myTank.setMoving(true);
-
-                if (bL)
-                    myTank.setDir(Dir.LEFT);
-                if (bU)
-                    myTank.setDir(Dir.UP);
-                if (bR)
-                    myTank.setDir(Dir.RIGHT);
-                if (bD)
-                    myTank.setDir(Dir.DOWN);
+                if (bL) {
+                    mainTank.setDir(Dir.LEFT);
+                }
+                if (bU) {
+                    mainTank.setDir(Dir.UP);
+                }
+                if (bR) {
+                    mainTank.setDir(Dir.RIGHT);
+                }
+                if (bD) {
+                    mainTank.setDir(Dir.DOWN);
+                }
+                boolean changeDir = mainTank.getDir() != lastDir;
+                if (changeMoving || changeDir) {
+                    Client.INSTANCE.sendMsg(new TankMovingMsg(mainTank.getX(), mainTank.getY(), mainTank.getDir(), mainTank.getId()));
+                }
             }
         }
     }

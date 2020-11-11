@@ -35,8 +35,8 @@ public class Client {
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             client = socketChannel;
                             socketChannel.pipeline()
-                                    .addLast(new TankMsgDecoder())
-                                    .addLast(new TankMsgEncoder())
+                                    .addLast(new MsgDecoder())
+                                    .addLast(new MsgEncoder())
                                     .addLast(new ClientChannelHandler());
                         }
                     })
@@ -57,7 +57,7 @@ public class Client {
         }
     }
 
-    public void sendMsg(TankMsg tankMsg) {
-        client.writeAndFlush(tankMsg);
+    public void sendMsg(Msg msg) {
+        client.writeAndFlush(msg);
     }
 }

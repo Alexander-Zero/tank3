@@ -2,11 +2,12 @@ package com.alex.zero.net;
 
 import com.alex.zero.Dir;
 import com.alex.zero.Group;
-import com.alex.zero.Tank;
 import com.alex.zero.TankFrame;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
+
+import java.util.Random;
+import java.util.UUID;
 
 
 /**
@@ -15,21 +16,16 @@ import io.netty.channel.SimpleChannelInboundHandler;
  * @date 2020/11/10
  * @description
  */
-public class ClientChannelHandler extends SimpleChannelInboundHandler<TankMsg> {
+public class ClientChannelHandler extends SimpleChannelInboundHandler<Msg> {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        TankMsg tank = new TankMsg(TankFrame.INSTANCE.myTank);
+        Random random = new Random();
+        TankJoinMsg tank = new TankJoinMsg(random.nextInt(600), random.nextInt(600), Dir.values()[random.nextInt(2)], random.nextBoolean(), Group.values()[random.nextInt(2)], TankFrame.INSTANCE.id);
         ctx.writeAndFlush(tank);
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, TankMsg msg) throws Exception {
-        TankMsg tankMsg = (TankMsg) msg;
-        if (tankMsg.id.equals(TankFrame.INSTANCE.myTank.getId()) || TankFrame.INSTANCE.tankMap.containsKey(tankMsg.id)) {
-            return;
-        } else {
-            TankFrame.INSTANCE.tankMap.put(tankMsg.id, new Tank(tankMsg));
-            ctx.writeAndFlush(new TankMsg(TankFrame.INSTANCE.myTank));
-        }
+    public void channelRead0(ChannelHandlerContext ctx, Msg msg) throws Exception {
+        msg.handler();
     }
 }

@@ -20,7 +20,11 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 public class Server {
     public static ChannelGroup clients = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
-    public static void main(String[] args) {
+//    public static void main(String[] args) {
+//        serverStart();
+//    }
+
+    public void serverStart() {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup(4);
         try {
@@ -32,13 +36,14 @@ public class Server {
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             clients.add(socketChannel);
                             socketChannel.pipeline()
-                                    .addLast(new TankMsgDecoder())
-                                    .addLast(new TankMsgEncoder())
+                                    .addLast(new MsgDecoder())
+                                    .addLast(new MsgEncoder())
                                     .addLast(new ServerChannelHandler());
                         }
                     })
                     .bind(8888)
                     .sync();
+            ServerFrame.INSTANCE.updateServerMsg("server Started!");
             future.channel().closeFuture().sync();
         } catch (Exception e) {
             e.printStackTrace();
